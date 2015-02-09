@@ -11,11 +11,11 @@ This perl package provides access to the Atlassian JIRA REST API.
 ## Example Usage
 
 ```perl
-use JIRA::Client
+use JIRA::Client;
 
-client = JIRA::Client.new({:consumer_key => CONSUMER_KEY, :consumer_secret => CONSUMER_SECRET})
+my $client = JIRA::Client->new( { consumer_key => CONSUMER_KEY, consumer_secret => CONSUMER_SECRET } );
 
-project = client.Project.find('SAMPLEPROJECT')
+my $project = $client->project->find('SAMPLEPROJECT');
 
 project.issues.each do |issue|
   puts "#{issue.id} - #{issue.summary}"

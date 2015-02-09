@@ -6,20 +6,32 @@ use warnings;
 use lib 'lib';
 
 use JIRA::Client;
+use Data::Dumper;
 
 use constant CONSUMER_KEY => 'hi';
 use constant CONSUMER_SECRET => 'hi';
 
 my $client = JIRA::Client->new( { consumer_key => CONSUMER_KEY, consumer_secret => CONSUMER_SECRET } );
 
-my $project = $client->project->find('SAMPLEPROJECT');
+#print Dumper($client);
 
-#project.issues.each do |issue|
-#  puts "#{issue.id} - #{issue.summary}"
-#end
+my $project = $client->Project->find('SAMPLEPROJECT');
+#my $project = $client->Project;
+
+#print Dumper( $project );
+
+my $issues = $project->issues();
+
+print Dumper( $issues );
+
+#foreach my $issue ( @{ $project->issues() } ) {
+#    print "$issue->id - $issue->summary\n";
+##
+##    foreach my $comment ( @{ $issue->comments() } ) {
+##        print "$comment\n";
+##    } 
+#}
 #
-#issue.comments.each {|comment| ... }
-#
-#comment = issue.comments.build
-#comment.save({'body':'My new comment'})
-#comment.delete
+#my $comment = $issue->comments->build();
+#$comment->save({ 'body' => 'My new comment' });
+#$comment->delete();
