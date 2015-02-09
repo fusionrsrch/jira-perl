@@ -1,5 +1,6 @@
-use strict;
-use warnings;
-package JIRA::Client;
+# ABSTRACT: A Perl JIRA REST API Client
 
-1;
+use MooseX::Declare;
+
+class JIRA::Client {
+}
