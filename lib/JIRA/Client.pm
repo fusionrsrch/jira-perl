@@ -1,95 +1,78 @@
 # ABSTRACT: A Perl JIRA REST API Client
 
-use MooseX::Declare;
+#use MooseX::Declare;
 
-class JIRA::Client {
+#class JIRA::Client {
+package JIRA::Client;
+
+    use Mouse;
 
     use Data::Dumper;
-    use Encode qw( encode_utf8 );
-    use JSON;
-    use LWP::UserAgent;
-    use MIME::Base64;
-    use URI::Encode;
-    use WAS2::Config;
 
+    use JIRA::Client::Resource::Issue;
     use JIRA::Client::Resource::Project;
     use JIRA::Client::HttpClient;
 
     use Method::Signatures::Simple name => 'action';
 
     has 'request_client' => ( is => 'rw' );
+    has 'options'        => ( isa => 'HashRef', is => 'rw' );
 
-    has 'options' => ( isa => 'HashRef', is => 'ro', builder => '_build_options' );
-
-    # builders
-    action _build_options() { 
-
-        my %DEFAULT_OPTIONS = (
-            site               => 'http://localhost:2990',
-            context_path       => '/jira',
-            rest_base_path     => "/rest/api/2",
-            #ssl_verify_mode    => OpenSSL::SSL::VERIFY_PEER,
-            ssl_verify_mode    => '',
-            use_ssl            => 1,
-            auth_type          => 'oauth'
-        );
-
-        return \%DEFAULT_OPTIONS; 
-    }
+    has 'auth_type'       => ( isa => 'Str', is => 'ro', default => 'oauth' );
+    has 'consumer_key'    => ( isa => 'Str', is => 'ro', default => 'consumer_key' );
+    has 'consumer_secret' => ( isa => 'Str', is => 'ro', default => 'consumer_secret' );
+    has 'content_path'    => ( isa => 'Str', is => 'ro', default => '/jira' );
+    has 'password'        => ( isa => 'Str', is => 'ro', default => 'password' );
+    has 'rest_base_path'  => ( isa => 'Str', is => 'ro', default => '/rest/api/2' );
+    has 'site'            => ( isa => 'Str', is => 'ro', default => 'http://localhost:2990' );
+    has 'ssl_verify_mode' => ( isa => 'Str', is => 'ro', default => 'OpenSSL::SSL::VERIFY_PEER' );
+    has 'use_ssl'         => ( isa => 'Int', is => 'ro', default => 1 );
+    has 'username'        => ( isa => 'Str', is => 'ro', default => 'username' );
 
     action BUILD() {
 
-        my $user_agent = LWP::UserAgent->new( agent => 'jirarest/0.1' );
-        $user_agent->default_header( 'Content-Type' => 'application/json'  );
-        $self->{_uaref} = $user_agent; 
+        my %options = ();
+        foreach my $key ( qw( auth_type consumer_key consumer_secret content_path password rest_base_path site ssl_verify_mode use_ssl username ) ) {
+            $options{$key} = $self->$key;
+        }
 
-        my $config = WAS2::Config->new();
+        $self->options( \%options );
 
-        my $settings = $config->get_jira_settings();
+        if ( lc( $self->auth_type ) eq 'basic' ) {
 
-        $self->{_jira_user}     = $settings->{username};
-        $self->{_jira_password} = $settings->{password};
+            $self->request_client( JIRA::Client::HttpClient->new( options => $self->options ) ); 
+        }
+        elsif ( lc( $self->auth_type ) eq 'oauth' ) {
 
-        my $encoded = encode_base64( $self->{_jira_user} .':' . $self->{_jira_password} );
-        $user_agent->default_header('Authorization' => "Basic $encoded");
-
-        $self->{_jira_host} = $settings->{host};
-
-        $self->{_jira_api_version} = '2';
-
-        $self->{_jira_url} = 'https://' . $self->{_jira_host} . '/rest/api/' . $self->{_jira_api_version} . '/';
-
-        $self->{_jsonref} = JSON->new();
-
-        $self->{_uriref} = URI::Encode->new( { encode_reserved => 0 } );
-
-        #bless $self, $class; 
-
-        ## usual functions for all JIRA requests
-        #$self->get_custom_fields();
-        $self->request_client( JIRA::Client::HttpClient->new() ); 
-
+            #$self->request_client( JIRA::Client::HttpClient->new( options => $self->options ) );
+        }
+        else {
+        }
     }
 
     action Project {
         return JIRA::Client::Resource::Project->new( client => $self );
     } 
 
+    action Issue {
+        return JIRA::Client::Resource::Issue->new( client => $self );
+    }
+
     action get($path, $headers) {
         return $self->request( 'get', $path, undef, $self->_merge_default_headers( $headers ) );
     }
-#    def get(path, headers = {})
-#      request(:get, path, nil, merge_default_headers(headers))
-#    end
 
     # Sends the specified HTTP request to the REST API through the
     # appropriate method (oauth, basic).
     action request($http_method, $path, $body, $headers) {
-        return $self->request_client->request($http_method, $path, $body, $headers);
+        return $self->request_client->request({ args => { http_method => $http_method, path => $path, body => $body, headers => $headers } });
     }
-#    def request(http_method, path, body = '', headers={})
-#      @request_client.request(http_method, path, body, headers)
-#    end
+
+
+
+
+
+
 
     
 
@@ -717,4 +700,7 @@ class JIRA::Client {
         return;
     }
 
-}
+#}
+#1;
+
+__PACKAGE__->meta->make_immutable();

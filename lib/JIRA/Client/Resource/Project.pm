@@ -1,6 +1,11 @@
-use MooseX::Declare;
+#use MooseX::Declare;
+#
+#class JIRA::Client::Resource::Project extends JIRA::Client::Base {
+package JIRA::Client::Resource::Project;
 
-class JIRA::Client::Resource::Project extends JIRA::Client::Base {
+    use Mouse;
+
+    extends 'JIRA::Client::Base';
 
     use Data::Dumper;
 
@@ -24,13 +29,26 @@ class JIRA::Client::Resource::Project extends JIRA::Client::Base {
 #
     #
 
+    action key_attribute() {
+        return 'key';
+    }
+#    def self.key_attribute
+#        :key
+#      end
+
     # Returns all the issues for this project
     action issues($options) {
         my $search_url = $self->client->options()->{rest_base_path} || '';
         $search_url .= '/search';
         print "JIRA::Client::Resource::Project->issues(): search_url $search_url\n";
-        my $query_params = { jql => "project=\"#{key}\"" };
+        my $query_params = { jql => "project=\"".$self->attrs()->{key}."\"" };
         my $response = $self->client->get( $self->url_with_query_params( $search_url, $query_params) );
+        my $json = $self->parse_json($response->decoded_content);
+        my @issues = ();
+        foreach my $issue ( @{ $json->{issues} } ) {
+            push( @issues, $self->client->Issue->build($issue) );
+        }
+        return \@issues;
     }
 #      def issues(options={})
 #        search_url = client.options[:rest_base_path] + '/search'
@@ -46,4 +64,6 @@ class JIRA::Client::Resource::Project extends JIRA::Client::Base {
 #  end
 #end
 #
-}
+#}
+#1;
+__PACKAGE__->meta->make_immutable();

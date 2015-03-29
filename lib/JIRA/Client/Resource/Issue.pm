@@ -1,13 +1,47 @@
-use MooseX::Declare;
+#use MooseX::Declare;
+#
+#class JIRA::Client::Resource::IssueFactory extends JIRA::Client::BaseFactory { 
+#};
+#
+#class JIRA::Client::Resource::Issue extends JIRA::Client::Base {
+package JIRA::Client::Resource::Issue;
 
-class JIRA::Client::Resource::IssueFactory extends JIRA::Client::BaseFactory { 
-};
+    use Mouse;
 
-class JIRA::Client::Resource::Issue extends JIRA::Client::Base {
+    extends 'JIRA::Client::Base';
 
     use Data::Dumper;
 
     use Method::Signatures::Simple name => 'action';
+
+    has 'id'      => ( is => 'ro' );
+    #has 'summary' => ( is => 'ro' );
+
+    #before => sub {
+    #     has_one('summary');
+#    };
+
+    action BUILD($args) {
+        #print Dumper( $args );
+
+        foreach my $key ( keys %{ $args } ) {
+            my $value = $args->{$key};
+            print "KEY: $key | $value\n";
+        }
+#        $self->summary('dude');
+        $self->has_one('summary', { class => 'Str', nested_under => 'fields' } );
+        $self->summary( $args->{summary} || '' );
+        $self->has_one('reporter', { class => 'JIRA::Client::Resource::User', nested_under => 'fields' } );
+        $self->has_one('assignee', { class => 'JIRA::Client::Resource::User', nested_under => 'fields' } );
+        $self->has_one('project', { nested_under => 'fields' } );
+        $self->has_one('issuetype', { nested_under => 'fields' } );
+        $self->has_one('priority', { nested_under => 'fields' } );
+        $self->has_one('status', { class => 'Hash', nested_under => 'fields' } );
+        $self->status( $args->{status} );
+#        $self->has_one('status');
+#        $self->has_one('reporter');
+    }
+
 #
 #require 'cgi'
 #
@@ -91,4 +125,7 @@ class JIRA::Client::Resource::Issue extends JIRA::Client::Base {
 #end
 #
 
-}
+#}
+#1;
+
+__PACKAGE__->meta->make_immutable();
